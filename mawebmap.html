@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>MA Speed Limits</title>
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+            ></script>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>      <!--jquery-->
+        <script type="text/javascript" src="http://maps.stamen.com/js/tile.stamen.js?v1.3.0"></script>
+
+        <style>
+            html { font-family: avenir; }
+            h1 { padding: 5px; background-color: #ddffee; }
+            button { font-family: avenir; }
+
+            #map { height: 500px; width: 100%; }
+            #highway_buttons { padding: 10px; background: #ffeedd; }
+            #legend { padding: 10px; float: right;}
+            #info { padding: 10px; }
+        </style>
+
+        <script src="mainterstates.geojson"></script>
+        <script src="maushighways.geojson"></script>
+        <script src="mastatehighways1.geojson"></script>
+        <script src="mastatehighways2.geojson"></script>
+
+        <script>
+            var stateLayer1;
+            var stateLayer2;
+            var stateLayersVisible = false;
+            var usLayer;
+            var usLayerVisible = false;
+            var interstateLayer;
+            var interstateLayerVisible = false;
+
+            var CartoDB_Voyager = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+	                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+	                subdomains: 'abcd',
+	                maxZoom: 20
+            });
+            var tonerLayer = new L.StamenTileLayer("toner-lite");
+
+            function lineSymbology(feature) {
+                var speed = feature.properties.Speed_Lim;
+                var lineColor = "#40004b";
+
+                if (speed == null) { lineColor = "#777777"; }
+                if (speed > 25) { lineColor = "#762a83"; }
+                if (speed > 30) { lineColor = "#9970ab"; }
+                if (speed > 35) { lineColor = "#c2a5cf"; }
+                if (speed > 40) { lineColor = "#e7d4e8"; }
+                if (speed > 45) { lineColor = "#a6dba0"; }
+                if (speed > 50) { lineColor = "#5aae61"; }
+                if (speed > 55) { lineColor = "#1b7837"; }
+                if (speed > 60) { lineColor = "#00441b"; }
+
+                return {
+                    color: lineColor,
+                    weight: 4,
+                    opacity: .8
+                };
+            }
+
+            function getRouteType(routeSyst) {
+                if (routeSyst == "I") {
+                    return "Interstate";
+                }
+                if (routeSyst == "US") {
+                    return "US Route";
+                }
+                return "State Route";
+            }
+
+            function getSpeed(speed) {
+                if (speed == null) {
+                    return "no data";
+                }
+                return (speed + " mph");
+            }
+
+            function getDirection(direction) {
+                if (direction == "NB") {
+                    return "(Northbound)";
+                }
+                if (direction == "SB") {
+                    return "(Southbound)";
+                }
+                if (direction == "WB") {
+                    return "(Westbound)";
+                }
+                if (direction == "EB") {
+                    return "(Eastbound)";
+                }
+                return "";
+            }
+
+            function highlightRoute(e) {
+                var layer = e.target;
+
+                layer.setStyle({
+                    weight: 8,
+                    opacity: 1
+                });
+
+                layer.bringToFront();
+            }
+
+            function resetHighlight(e) {
+                stateLayer1.resetStyle(e.target);
+                stateLayer2.resetStyle(e.target);
+                usLayer.resetStyle(e.target);
+                interstateLayer.resetStyle(e.target);
+            }
+
+            function initialize() {
+                var map = L.map('map', {
+                    center: [ 42.0369215, -71.6835015 ],
+                    zoom: 8,
+                    layers: [CartoDB_Voyager]
+                });
+
+                var baseMaps = {    "Voyager": CartoDB_Voyager,
+                                    "Toner" : tonerLayer
+                }
+
+                L.control.layers(baseMaps).addTo(map);
+
+                stateLayer1 = L.geoJson(mastatehighways1_geojson,
+                    {   style: lineSymbology,
+                        onEachFeature: function(feature, layer) {
+                            layer.on({
+                                mouseover: highlightRoute,
+                                mouseout: resetHighlight
+                            });
+                            layer.bindPopup("<b>Route: " + getRouteType(feature.properties.Route_Syst) + " " + feature.properties.Route_Numb + "<br>Speed Limit: " + getSpeed(feature.properties.Speed_Lim) + "</b>");
+                        }
+                    });
+
+                stateLayer2 = L.geoJson(mastatehighways2_geojson,
+                    {   style: lineSymbology,
+                        onEachFeature: function(feature, layer) {
+                            layer.on({
+                                mouseover: highlightRoute,
+                                mouseout: resetHighlight
+                            });
+                            layer.bindPopup("<b>Route: " + getRouteType(feature.properties.Route_Syst) + " " + feature.properties.Route_Numb + "<br>Speed Limit: " + getSpeed(feature.properties.Speed_Lim) + "</b>");
+                        }
+                    });
+
+                usLayer = L.geoJson(maushighways_geojson,
+                    {   style: lineSymbology,
+                        onEachFeature: function(feature, layer) {
+                            layer.on({
+                                mouseover: highlightRoute,
+                                mouseout: resetHighlight
+                            });
+                            layer.bindPopup("<b>Route: " + getRouteType(feature.properties.Route_Syst) + " " + feature.properties.Route_Numb + "<br>Speed Limit: " + getSpeed(feature.properties.Speed_Lim) + "</b>");
+                        }
+                    });
+
+                interstateLayer = L.geoJson(mainterstates_geojson,
+                    {   style: lineSymbology,
+                        onEachFeature: function(feature, layer) {
+                            layer.on({
+                                mouseover: highlightRoute,
+                                mouseout: resetHighlight
+                            });
+                            layer.bindPopup("<b>Route: " + getRouteType(feature.properties.Route_Syst) + " " + feature.properties.Route_Numb + " " + getDirection(feature.properties.Route_Dire) + "<br>Speed Limit: " + getSpeed(feature.properties.Speed_Lim) + "</b>");
+                        }
+                    });
+
+
+                $("#toggleInterstates").click( function() {
+                    if (interstateLayerVisible) {
+                        interstateLayerVisible = false;
+                        interstateLayer.removeFrom(map);
+                    } else {
+                        interstateLayerVisible = true;
+                        interstateLayer.addTo(map);
+                    }
+                });
+
+                $("#toggleUS").click( function() {
+                    if (usLayerVisible) {
+                        usLayerVisible = false;
+                        usLayer.removeFrom(map);
+                    } else {
+                        usLayerVisible = true;
+                        usLayer.addTo(map);
+                    }
+                });
+
+                $("#toggleState").click( function() {
+                    if (stateLayersVisible) {
+                        stateLayersVisible = false;
+                        stateLayer1.removeFrom(map);
+                        stateLayer2.removeFrom(map);
+                    } else {
+                        stateLayersVisible = true;
+                        stateLayer1.addTo(map);
+                        stateLayer2.addTo(map);
+                    }
+                });
+            }
+        </script>
+    </head>
+    <body onload="initialize()">
+        <h1>Massachusetts Highway Speed Limits</h1>
+
+        <div id="map"></div>
+
+        <div id="highway_buttons">
+            <button id="toggleInterstates">Show Interstate Highways</button>
+            <button id="toggleUS">Show US Highways</button>
+            <button id="toggleState">Show MA State Highways</button>
+        </div>
+
+        <div id="legend">
+            <table>
+                <tr>
+                    <th colspan="5">Speed Legend</th>
+                </tr>
+                <tr>
+                    <td>25 mph or less  </td>
+                    <td style="color: #40004b; font-weight: 900; font-size: 24pt ; ">-------- </td>
+                    <td>|</td>
+                    <td>50 mph</td>
+                    <td style="color: #a6dba0; font-weight: 900; font-size: 24pt ; ">--------</td>
+                </tr>
+                <tr>
+                    <td>30 mph</td>
+                    <td style="color: #762a83; font-weight: 900; font-size: 24pt ; ">--------</td>
+                    <td>|</td>
+                    <td>55 mph</td>
+                    <td style="color: #5aae61; font-weight: 900; font-size: 24pt ; ">--------</td>
+                </tr>
+                <tr>
+                    <td>35 mph</td>
+                    <td style="color: #9970ab; font-weight: 900; font-size: 24pt ; ">--------</td>
+                    <td>|</td>
+                    <td>60 mph</td>
+                    <td style="color: #1b7837; font-weight: 900; font-size: 24pt ; ">--------</td>
+                </tr>
+                <tr>
+                    <td>40 mph</td>
+                    <td style="color: #c2a5cf; font-weight: 900; font-size: 24pt ; ">--------</td>
+                    <td>|</td>
+                    <td>65 mph</td>
+                    <td style="color: #00441b; font-weight: 900; font-size: 24pt ; ">--------</td>
+                </tr>
+                <tr>
+                    <td>45 mph</td>
+                    <td style="color: #e7d4e8; font-weight: 900; font-size: 24pt ; ">--------</td>
+                    <td>|</td>
+                    <td>No Data</td>
+                    <td style="color: #777777; font-weight: 900; font-size: 24pt ; ">--------</td>
+                </tr>
+            </table>
+        </div>
+
+        <div id="info">
+            <p>Created by Nick Derby</p>
+            <p>Data sourced from the <a href="https://geo-massdot.opendata.arcgis.com/">MassDOT Open Data Portal</a>. The specific data set used in this map is the <a href="https://geo-massdot.opendata.arcgis.com/datasets/road-inventory-2020?geometry=-75.645%2C41.342%2C-67.734%2C42.770">2020 Road Inventory</a>, updated on 29 April 2021.</p>
+            <p>This map overlays every numbered highway in Massachusetts with a color to indicate the posted speed limit. The highest posted limit in the state is 65 mph, found mostly on rural freeways.</p>
+            <p>Click on a road segment to display the route number and the speed limit. Use the buttons at the bottom of the map to toggle different types of routes. Whichever route layer is toggled last will display on top.</p>
+        </div>
+    </body>
+</html>
