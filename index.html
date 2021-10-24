@@ -6,7 +6,6 @@
             ></script>
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>      <!--jquery-->
-        <!-- <script type="text/javascript" src="http://maps.stamen.com/js/tile.stamen.js?v1.3.0"></script> -->
 
         <style>
             html { font-family: avenir; }
@@ -38,7 +37,6 @@
 	                subdomains: 'abcd',
 	                maxZoom: 20
             });
-            // var tonerLayer = new L.StamenTileLayer("toner-lite");
 
             function lineSymbology(feature) {
                 var speed = feature.properties.Speed_Lim;
@@ -119,9 +117,7 @@
                     layers: [CartoDB_Voyager]
                 });
 
-                var baseMaps = {    "Voyager": CartoDB_Voyager
-                                    // "Toner" : tonerLayer
-                }
+                var baseMaps = { "Voyager": CartoDB_Voyager }
 
                 L.control.layers(baseMaps).addTo(map);
 
